@@ -1,24 +1,26 @@
 import React, { useState, useEffect } from "react";
+import { useRef } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js";
 import { useCart } from "../cartState"; 
 import { useNavigate } from "react-router-dom";
 
-
-if (!process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY) {
-  console.error("❌ ERROR: Stripe Publishable Key is missing!");
-}
-
+// Load Stripe only when key is available
 const stripePromise = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY)
   : null;
+
+if (!stripePromise) {
+  console.error(" ERROR: Stripe Publishable Key is missing!");
+}
+
 
 const CheckoutForm = () => {
   const stripe = useStripe();
   const elements = useElements();
   const [message, setMessage] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,16 +28,25 @@ const CheckoutForm = () => {
 
     setIsProcessing(true);
 
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      confirmParams: { return_url: window.location.origin },
-      redirect: "if_required",
-    });
+    try {
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: { return_url: window.location.origin },
+        redirect: "if_required",
+      });
 
-    if (error) {
-      setMessage(error.message);
-    } else if (paymentIntent && paymentIntent.status === "succeeded") {
-      navigate("/success"); // ✅ Redirect user to success page!
+      if (error) {
+        console.error("❌ Payment Error:", error);
+        setMessage(error.message);
+      } else if (paymentIntent?.status === "succeeded") {
+        console.log("✅ Payment Successful:", paymentIntent);
+        navigate("/success");
+      } else {
+        console.warn("⚠️ Unexpected PaymentIntent Status:", paymentIntent?.status);
+      }
+    } catch (err) {
+      console.error("❌ Unexpected Error:", err);
+      setMessage("An error occurred while processing your payment.");
     }
 
     setIsProcessing(false);
@@ -55,31 +66,37 @@ const CheckoutForm = () => {
 
 const Checkout = () => {
   const [clientSecret, setClientSecret] = useState("");
-  const { cart } = useCart(); // Fetch cart items
-  const totalAmount = cart.reduce((sum, item) => sum + item.price, 0); // Ensure proper cart total calculation
-  useEffect(() => {
-    if (!clientSecret) { // Prevent re-fetching if already set
-      fetch("http://localhost:4242/create-payment-intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: totalAmount * 100 }), // Convert total to cents
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.clientSecret) {
-            setClientSecret(data.clientSecret);
-          } else {
-            console.error(" ERROR: No clientSecret received from backend.");
-          }
-        })
-        .catch((err) => console.error(" ERROR fetching client secret:", err));
-    }
-  }, [clientSecret, totalAmount]); //  Depend on clientSecret + total to prevent unnecessary re-fetching
+  const { cart } = useCart();
+  const totalAmount = cart.reduce((sum, item) => sum + item.price, 0);
+  const hasFetchedPaymentIntent = useRef(false);
   
+
+  useEffect(() => {
+    if (!totalAmount || hasFetchedPaymentIntent.current) return; // ✅ Prevent re-fetching
+
+    hasFetchedPaymentIntent.current = true;
+
+    //fetch("http://localhost:4242/create-payment-intent", {      ****FOR LOCAL 
+    fetch("https://cozy-threads-vjs4.onrender.com/", {   // For Deployed App
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: Math.round(totalAmount * 100) }), 
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.clientSecret) {
+          setClientSecret(data.clientSecret);
+        } else {
+          console.error("❌ ERROR: No clientSecret received from backend.");
+        }
+      })
+      .catch((err) => console.error("❌ ERROR fetching client secret:", err));
+  }, [totalAmount]);
+
   return (
     <div style={{ maxWidth: "900px", margin: "auto", padding: "20px", display: "flex", justifyContent: "space-between" }}>
-      {/* Order Summary Section */}
-      <div style={{ width: "50%", paddingRight: "20px" }}>
+
+<div style={{ width: "50%", paddingRight: "20px" }}>
         <h2>Checkout</h2>
         <h3>Order Summary</h3>
 
@@ -101,17 +118,19 @@ const Checkout = () => {
         )}
       </div>
 
-      {/* Payment Section */}
       <div style={{ width: "45%", padding: "20px", background: "#f9f9f9", borderRadius: "5px" }}>
         <h3>Complete Your Purchase</h3>
-        {clientSecret && (
+        {clientSecret ? (
           <Elements options={{ clientSecret }} stripe={stripePromise}>
             <CheckoutForm />
-          </Elements>
-        )}
+            </Elements>
+            ) : (
+            <p>Loading payment details...</p> // Avoid rendering Elements until ready
+            )}
       </div>
     </div>
   );
 };
 
 export default Checkout;
+
