@@ -20,33 +20,7 @@ Technologies Used:
 
 Directory Structure: 
 
-COZY-THREADS
-│── client  
-│   ├── public/
-│   │   ├── index.html
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Navbar.js
-│   │   ├── pages/
-│   │   │   ├── Cart.js
-│   │   │   ├── Checkout.js
-│   │   │   ├── Home.js
-│   │   │   ├── Success.js
-│   │   ├── App.js
-│   │   ├── cartState.js
-│   │   ├── index.js
-│   │   ├── styles.css
-│   ├── .gitignore
-│   ├── package-lock.json
-│   ├── package.json
-│
-│── server
-│   ├── node_modules/
-│   ├── .env
-│   ├── package-lock.json
-│   ├── package.json
-│   ├── server.js
-│   ├── README.md
+COZY-THREADS │── client/ # React Frontend │ ├── public/ │ │ ├── index.html │ ├── src/ │ │ ├── components/ │ │ │ ├── Navbar.js │ │ ├── pages/ │ │ │ ├── Cart.js │ │ │ ├── Checkout.js │ │ │ ├── Home.js │ │ │ ├── Success.js │ │ ├── App.js │ │ ├── cartState.js │ │ ├── index.js │ │ ├── styles.css │ ├── .gitignore │ ├── package-lock.json │ ├── package.json │ │── server/ # Express Backend │ ├── .env # Environment variables (not in Git) │ ├── package.json │ ├── server.js # API & Payment Processing │ │── README.md # Project Documentation
 
 ---
 
