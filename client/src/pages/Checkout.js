@@ -77,7 +77,7 @@ const Checkout = () => {
     hasFetchedPaymentIntent.current = true;
 
     //fetch("http://localhost:4242/create-payment-intent", {      ****FOR LOCAL 
-    fetch("https://cozy-threads-vjs4.onrender.com/", {   // For Deployed App
+    fetch("https://cozy-threads-vjs4.onrender.com/create-payment-intent", {  // For Deployed App
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ amount: Math.round(totalAmount * 100) }), 
