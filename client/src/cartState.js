@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState } from "react";
 
 // Create the Cart Context
+// Context API is used to share cart state globally across components
 export const CartContext = createContext();
 
-// Cart Provider Component
+// Cart Provider Component - Manages state of cart items
 export const CartProvider = ({ children }) => {
     const [cart, setCart] = useState([]);
 

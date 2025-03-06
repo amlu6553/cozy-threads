@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js";
-import { useCart } from "../cartState"; // Ensure cart context is properly imported
+import { useCart } from "../cartState"; 
 import { useNavigate } from "react-router-dom";
 
-// ✅ Load Stripe with publishable key dynamically
-const stripePromise = fetch("http://localhost:4242/publishable-key")
-  .then((res) => res.json())
-  .then((data) => loadStripe(data.key))
-  .catch((err) => console.error("Error fetching publishable key:", err));
+
+if (!process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY) {
+  console.error("❌ ERROR: Stripe Publishable Key is missing!");
+}
+
+const stripePromise = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY)
+  : null;
 
 const CheckoutForm = () => {
   const stripe = useStripe();
@@ -32,7 +35,6 @@ const CheckoutForm = () => {
     if (error) {
       setMessage(error.message);
     } else if (paymentIntent && paymentIntent.status === "succeeded") {
-      //setMessage("Payment successful! 🎉");
       navigate("/success"); // ✅ Redirect user to success page!
     }
 
@@ -55,19 +57,25 @@ const Checkout = () => {
   const [clientSecret, setClientSecret] = useState("");
   const { cart } = useCart(); // Fetch cart items
   const totalAmount = cart.reduce((sum, item) => sum + item.price, 0); // Ensure proper cart total calculation
-
   useEffect(() => {
-    // ✅ Create a payment intent dynamically from the server
-    fetch("http://localhost:4242/create-payment-intent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: totalAmount * 100 }), // Convert total to cents
-    })
-      .then((res) => res.json())
-      .then((data) => setClientSecret(data.clientSecret))
-      .catch((err) => console.error("Error fetching client secret:", err));
-  }, [totalAmount]);
-
+    if (!clientSecret) { // Prevent re-fetching if already set
+      fetch("http://localhost:4242/create-payment-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: totalAmount * 100 }), // Convert total to cents
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.clientSecret) {
+            setClientSecret(data.clientSecret);
+          } else {
+            console.error(" ERROR: No clientSecret received from backend.");
+          }
+        })
+        .catch((err) => console.error(" ERROR fetching client secret:", err));
+    }
+  }, [clientSecret, totalAmount]); //  Depend on clientSecret + total to prevent unnecessary re-fetching
+  
   return (
     <div style={{ maxWidth: "900px", margin: "auto", padding: "20px", display: "flex", justifyContent: "space-between" }}>
       {/* Order Summary Section */}
@@ -96,7 +104,6 @@ const Checkout = () => {
       {/* Payment Section */}
       <div style={{ width: "45%", padding: "20px", background: "#f9f9f9", borderRadius: "5px" }}>
         <h3>Complete Your Purchase</h3>
-
         {clientSecret && (
           <Elements options={{ clientSecret }} stripe={stripePromise}>
             <CheckoutForm />

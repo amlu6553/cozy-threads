@@ -6,7 +6,6 @@ const Cart = () => {
     const { cart } = useCart();
     const navigate = useNavigate();
 
-    // Calculate total price
     const calculateTotal = () => {
         return cart.reduce((total, item) => total + item.price, 0);
     };
@@ -29,10 +28,8 @@ const Cart = () => {
                         </div>
                     ))}
 
-                    {/* Display correct total */}
                     <h3>Total: ${calculateTotal().toFixed(2)}</h3>
 
-                    {/* ✅ Pass entire cart to checkout */}
                     <button 
                         onClick={() => navigate("/checkout", { state: { cart, total: calculateTotal() }})} 
                         style={{ background: "green", color: "white", padding: "10px", border: "none", cursor: "pointer", width: "100%", marginTop: "10px" }}

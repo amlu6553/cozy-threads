@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { CartProvider } from "./cartState"; // ✅ Import CartProvider
+//import { CartProvider } from "./cartState";// ✅ Update import
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Checkout from "./pages/Checkout";
@@ -13,7 +14,6 @@ import Success from "./pages/Success"; // ✅ Import Success page
 
 // Load Stripe using the publishable key
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
-
 
 function App() {
     return (
